@@ -1,0 +1,26 @@
+*{
+    padding:0;
+    margin:0;
+}
+body{
+    padding:20px;
+    background:#F5F5DC;
+}
+.scoreboard{
+    width:601px;
+    text-align: center;
+    margin:0 auto 15px;
+}
+.scoreboard input{
+    padding: 5px 7px;
+    margin: 0 10px;
+}
+.gameboard{
+    width:601px;
+    height:601px;
+    margin:0 auto;
+}
+.gameboard #board{
+    width:601px;
+    height:601px;
+}
