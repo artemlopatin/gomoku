@@ -5,7 +5,7 @@ $(function () {
     var ctx = canvas.getContext("2d");
     var X, Y, N, M;
     var size = 15, cellsize = 40, halfcellsize = 20, radius = 12, cross = 10, crosswin = 15;
-    var WHO, matrix;
+    var WHO, matrix, freecells;
     var pattwin = [0, /(1){5}/, /(2){5}/];
     var gameinprocess;
     NewGame(2);
@@ -37,17 +37,16 @@ $(function () {
         if (matrix[N][M] !== 0)
             return;
         gameinprocess = false;
-        GameMove(N, M);
-
-
         canvas.style.cursor = "";
-        IsFinish();
-        gameinprocess = true;
+        GameMove(N, M);
+        if (gameinprocess)
+            GameMoveAI();
     }
 
     function NewGame(a) {
         WHO = true;
         matrix = [];
+        freecells = size * size;
         for (var i = 0; i < size; i++) {
             matrix[i] = [];
             for (var j = 0; j < size; j++) {
@@ -70,7 +69,16 @@ $(function () {
         ctx.stroke();
         gameinprocess = true;
         if (a === 2)
-            GameMove(7, 7);
+            GameMove(N = 7, M = 7);
+    }
+
+    function GameMoveAI() {
+        gameinprocess = false;
+        do {
+            n = getRandomInt(0, 14);
+            m = getRandomInt(0, 14);
+        } while (matrix[n][m] !== 0);
+        GameMove(n, m);
     }
 
     function GameMove(n, m)
@@ -81,18 +89,20 @@ $(function () {
         else
             DrawO(n, m);
         WHO = !WHO;
+        freecells--;
+        IsGameOver();
     }
 
-    function IsFinish() {
+    function IsGameOver() {
         t = matrix[N][M];
         s = ['', '', '', ''];
         nT = Math.min(M, 4);
         nR = Math.min(size - N - 1, 4);
         nB = Math.min(size - M - 1, 4);
         nL = Math.min(N, 4);
-        for (j = M - nT; j < M + nB; j++)
+        for (j = M - nT; j <= M + nB; j++)
             s[0] += matrix[N][j];
-        for (i = N - nL; i < N + nR; i++)
+        for (i = N - nL; i <= N + nR; i++)
             s[1] += matrix[i][M];
         for (i = - Math.min(nT, nL); i <= Math.min(nR, nB); i++)
             s[2] += matrix[N + i][M + i];
@@ -106,12 +116,14 @@ $(function () {
             GameOver(N - Math.min(nT, nL) + k, M - Math.min(nT, nL) + k, N - Math.min(nT, nL) + k + 4, M - Math.min(nT, nL) + k + 4);
         else if ((k = s[3].search(pattwin[t])) >= 0)
             GameOver(N - Math.min(nB, nL) + k, M + Math.min(nB, nL) - k, N - Math.min(nB, nL) + k + 4, M + Math.min(nB, nL) - k - 4, -1);
+        else if (freecells !== 0)
+            gameinprocess = true;
     }
+
     function GameOver(a, b, c, d, e)
     {
         e = e || 1;
         DrawWinLine(a, b, c, d, e);
-        gameinprocess = false;
     }
 
 
@@ -149,5 +161,9 @@ $(function () {
         y = m * cellsize + halfcellsize;
         ctx.arc(x, y, radius, 0, 2 * Math.PI);
         ctx.stroke();
+    }
+
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 });
