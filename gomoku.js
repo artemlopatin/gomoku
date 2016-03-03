@@ -4,60 +4,149 @@ $(function () {
     canvas.width = 601;
     var ctx = canvas.getContext("2d");
     var X, Y, N, M;
-    var cellsize = 40, halfcellsize = 20, radius = 12, cross = 10;
-    var WHO = true;
-
-    ctx.fillStyle = '#ECEABE';
-    ctx.fillRect(0, 0, canvas.width, canvas.width);
-    ctx.beginPath();
-    ctx.strokeStyle = "silver";
-    ctx.lineWidth = "1";
-    for (var x = 0.5; x < canvas.width; x += cellsize) {
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-    }
-    for (var y = 0.5; y < canvas.height; y += cellsize) {
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-    }
-    ctx.stroke();
+    var size = 15, cellsize = 40, halfcellsize = 20, radius = 12, cross = 10, crosswin = 15;
+    var WHO, matrix;
+    var pattwin = [0, /(1){5}/, /(2){5}/];
+    var gameinprocess;
+    NewGame(2);
 
     $("#board").mousemove(function (event) {
-        X = event.pageX - canvas.offsetLeft;
-        Y = event.pageY - canvas.offsetTop;
+        MouseMove(event);
+    }).click(Click);
 
-    }).click(function () {
-        N = Math.floor(X / cellsize);
-        M = Math.floor(Y / cellsize);
-        if (WHO)
-            showX();
-        else
-            show0();
-        WHO = !WHO;
+    $(".newgame").click(function () {
+        NewGame($(this).data('for'));
     });
 
-    function showX()
+    function MouseMove(event) {
+        if (!gameinprocess)
+            return;
+        X = event.pageX - canvas.offsetLeft;
+        Y = event.pageY - canvas.offsetTop;
+        N = Math.floor(X / cellsize);
+        M = Math.floor(Y / cellsize);
+        if (matrix[N][M] === 0)
+            canvas.style.cursor = "pointer";
+        else
+            canvas.style.cursor = "";
+    }
+
+    function Click() {
+        if (!gameinprocess)
+            return;
+        if (matrix[N][M] !== 0)
+            return;
+        gameinprocess = false;
+        GameMove(N, M);
+
+
+        canvas.style.cursor = "";
+        IsFinish();
+        gameinprocess = true;
+    }
+
+    function NewGame(a) {
+        WHO = true;
+        matrix = [];
+        for (var i = 0; i < size; i++) {
+            matrix[i] = [];
+            for (var j = 0; j < size; j++) {
+                matrix[i][j] = 0;
+            }
+        }
+        ctx.fillStyle = '#ECEABE';
+        ctx.fillRect(0, 0, canvas.width, canvas.width);
+        ctx.beginPath();
+        ctx.strokeStyle = "silver";
+        ctx.lineWidth = "1";
+        for (var x = 0.5; x < canvas.width; x += cellsize) {
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+        }
+        for (var y = 0.5; y < canvas.height; y += cellsize) {
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+        }
+        ctx.stroke();
+        gameinprocess = true;
+        if (a === 2)
+            GameMove(7, 7);
+    }
+
+    function GameMove(n, m)
+    {
+        matrix[n][m] = 2 - WHO;
+        if (WHO)
+            DrawX(n, m);
+        else
+            DrawO(n, m);
+        WHO = !WHO;
+    }
+
+    function IsFinish() {
+        t = matrix[N][M];
+        s = ['', '', '', ''];
+        nT = Math.min(M, 4);
+        nR = Math.min(size - N - 1, 4);
+        nB = Math.min(size - M - 1, 4);
+        nL = Math.min(N, 4);
+        for (j = M - nT; j < M + nB; j++)
+            s[0] += matrix[N][j];
+        for (i = N - nL; i < N + nR; i++)
+            s[1] += matrix[i][M];
+        for (i = - Math.min(nT, nL); i <= Math.min(nR, nB); i++)
+            s[2] += matrix[N + i][M + i];
+        for (i = - Math.min(nB, nL); i <= Math.min(nR, nT); i++)
+            s[3] += matrix[N + i][M - i];
+        if ((k = s[0].search(pattwin[t])) >= 0)
+            GameOver(N, M - nT + k, N, M - nT + k + 4);
+        else if ((k = s[1].search(pattwin[t])) >= 0)
+            GameOver(N - nL + k, M, N - nL + k + 4, M);
+        else if ((k = s[2].search(pattwin[t])) >= 0)
+            GameOver(N - Math.min(nT, nL) + k, M - Math.min(nT, nL) + k, N - Math.min(nT, nL) + k + 4, M - Math.min(nT, nL) + k + 4);
+        else if ((k = s[3].search(pattwin[t])) >= 0)
+            GameOver(N - Math.min(nB, nL) + k, M + Math.min(nB, nL) - k, N - Math.min(nB, nL) + k + 4, M + Math.min(nB, nL) - k - 4, -1);
+    }
+    function GameOver(a, b, c, d, e)
+    {
+        e = e || 1;
+        DrawWinLine(a, b, c, d, e);
+        gameinprocess = false;
+    }
+
+
+    function DrawWinLine(n1, m1, n2, m2, r)
+    {
+        ctx.beginPath();
+        ctx.strokeStyle = "#6A5D4D";
+        ctx.lineWidth = "3";
+        ctx.lineCap = "round";
+        ctx.moveTo(n1 * cellsize + halfcellsize - crosswin * (n1 !== n2), m1 * cellsize + halfcellsize - crosswin * (m1 !== m2) * r);
+        ctx.lineTo(n2 * cellsize + halfcellsize + crosswin * (n1 !== n2), m2 * cellsize + halfcellsize + crosswin * (m1 !== m2) * r);
+        ctx.stroke();
+    }
+    function DrawX(n, m)
     {
         ctx.beginPath();
         ctx.strokeStyle = "#C1876B";
         ctx.lineWidth = "5";
         ctx.lineCap = "round";
-        x = N * cellsize + halfcellsize;
-        y = M * cellsize + halfcellsize;
+        x = n * cellsize + halfcellsize;
+        y = m * cellsize + halfcellsize;
         ctx.moveTo(x - cross, y - cross);
         ctx.lineTo(x + cross, y + cross);
         ctx.moveTo(x - cross, y + cross);
         ctx.lineTo(x + cross, y - cross);
         ctx.stroke();
     }
-    function show0()
+    function DrawO(n, m)
     {
         ctx.beginPath();
         ctx.strokeStyle = "#BEBD7F";
         ctx.lineWidth = "5";
         ctx.lineCap = "round";
-        x = N * cellsize + halfcellsize;
-        y = M * cellsize + halfcellsize;
+        x = n * cellsize + halfcellsize;
+        y = m * cellsize + halfcellsize;
         ctx.arc(x, y, radius, 0, 2 * Math.PI);
         ctx.stroke();
     }
