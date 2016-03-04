@@ -6,18 +6,16 @@ $(function () {
     var X, Y, N, M;
     var size = 15, cellsize = 40, halfcellsize = 20, radius = 12, cross = 10, crosswin = 15;
     var WHO, matrix, freecells;
+    var matrixAttack;
     var pattwin = [0, /(1){5}/, /(2){5}/];
-    var gameinprocess;
+    var directions1 = {1: {n: -1, m: -1}, 2: {n: -1, m: 0}, 3: {n: -1, m: 1}, 4: {n: 0, m: -1}, 5: {n: 0, m: 1}, 6: {n: 1, m: -1}, 7: {n: 1, m: 0}, 8: {n: 1, m: 1}};
     NewGame(2);
-
     $("#board").mousemove(function (event) {
         MouseMove(event);
     }).click(Click);
-
     $(".newgame").click(function () {
         NewGame($(this).data('for'));
     });
-
     function MouseMove(event) {
         if (!gameinprocess)
             return;
@@ -46,6 +44,7 @@ $(function () {
     function NewGame(a) {
         WHO = true;
         matrix = [];
+        matrixAttack = {7: {7: 1}};
         freecells = size * size;
         for (var i = 0; i < size; i++) {
             matrix[i] = [];
@@ -69,17 +68,72 @@ $(function () {
         ctx.stroke();
         gameinprocess = true;
         if (a === 2)
-            GameMove(N = 7, M = 7);
+            GameMoveAI();
     }
 
     function GameMoveAI() {
         gameinprocess = false;
-        do {
-            n = getRandomInt(0, 14);
-            m = getRandomInt(0, 14);
-        } while (matrix[n][m] !== 0);
-        GameMove(n, m);
+        max = 0;
+        for (var keyM in matrixAttack)
+        {
+            for (var keyN in matrixAttack[keyM])
+            {
+                if (matrixAttack[keyM][keyN] > max)
+                    max = matrixAttack[keyM][keyN];
+            }
+        }
+        goodmoves = [];
+        for (var keyM in matrixAttack)
+        {
+            for (var keyN in matrixAttack[keyM])
+            {
+                if (matrixAttack[keyM][keyN] === max)
+                    goodmoves[goodmoves.length] = {n: keyN, m: keyM};
+            }
+        }
+
+        /*
+         do {
+         N = getRandomInt(0, 14);
+         M = getRandomInt(0, 14);
+         } while (matrix[N][M] !== 0);
+         */
+        movenow = goodmoves[Math.round(Math.random() * (goodmoves.length - 1))];
+        N = movenow[n];
+        M = movenow[m];
+
+        delete matrixAttack[N][M];
+        for (var key in directions1) {
+            n = N + directions1[key].n;
+            m = M + directions1[key].m;
+            if (n < 0 || m < 0 || n >= size || m >= size)
+                continue;
+            if (!(m in matrixAttack))
+                matrixAttack[m] = {};
+            if (!(n in matrixAttack[n]))
+                matrixAttack[m][n] = 0;
+            matrixAttack[m][n]++;
+            //           console.log(JSON.stringify(matrixAttack));
+        }
+        //matrixAttack[N][M] = 1;
+        for (var keyM in matrixAttack)
+        {
+            for (var keyN in matrixAttack[keyM])
+            {
+                x = keyN * cellsize + halfcellsize / 4;
+                y = keyM * cellsize + halfcellsize / 4;
+                ctx.fillStyle = "#ECEABE";
+                ctx.fillRect(x, y, 10, 10);
+                ctx.fillStyle = "black";
+                ctx.textBaseline = "top";
+                ctx.fillText(matrixAttack[keyM][keyN], x, y);
+            }
+        }
+
+        console.log(JSON.stringify(matrixAttack));
+        GameMove(N, M);
     }
+
 
     function GameMove(n, m)
     {
