@@ -2,10 +2,18 @@
 
 (new function() {
     var App = this;
-    this.files = ['js/AppModel.js', 'js/MouseController.js'];
-    this.loadedFiles = 0;
+    this.files = ['js/lib.js', 'js/AppModel.js', 'js/AppView.js', 'js/AppController.js', 'js/MouseController.js'];
     this.model;
+    this.view;
+    this.controller;
+
     this.init = function() {
+        this.model = new AppModel();
+        this.view = new AppView(this.model);
+        this.controller = new AppController(this.model, this.view);
+    };
+
+    return function() {
         var head = document.getElementsByTagName('head')[0];
         for (var i in App.files)
         {
@@ -14,16 +22,6 @@
             script.onload = App.start;
             head.appendChild(script);
         }
-    };
-    this.start = function() {
-        App.loadedFiles++;
-        if (App.loadedFiles === App.files.length)
-        {
-            App.model = new AppModel();
-            App.model.init();
-        }
-    };
-    return function() {
         window.onload = App.init;
     };
 })();

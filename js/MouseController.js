@@ -13,7 +13,7 @@ function MouseController(element, move, click) {
         this.moveApp(this.x, this.y);
     };
     this.click = function() {
-        this.clickApp();
+        this.clickApp(this.x, this.y);
     };
     this.element.addEventListener('mousemove', function(e) {
         MouseController.move(e);
