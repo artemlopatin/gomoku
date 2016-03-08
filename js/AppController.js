@@ -9,6 +9,12 @@ var AppController = function(model, view) {
     this.init = function() {
         AppController.mouse = new MouseController(view.canvas, AppController.move, AppController.click);
         AppController.newGame(2);
+        AppController.view.inputNewGameX.onclick = function() {
+            AppController.newGame(1);
+        };
+        AppController.view.inputNewGameO.onclick = function() {
+            AppController.newGame(2);
+        };
     };
 
     this.newGame = function(a) {
@@ -20,38 +26,34 @@ var AppController = function(model, view) {
 
     this.moveAI = function() {
         var nm = model.moveAI();
-        //model.move(nm.n, nm.m);
-        view.renderMove(nm);
+        this.view.renderMove(nm);
+        if (!this.model.playing)
+            this.view.renderWinLine();
     };
-    /*
-     this.GameMove = function(n, m) {
-     model.move(n, m);
-     view.renderMove(n, m);
-     this.IsGameOver();
-     };*/
+
+    this.moveUser = function() {
+        if (!this.model.emptyCell())
+            return;
+        var nm = this.model.moveUser();
+        this.view.renderMove(nm);
+        this.view.setStyleCursorDefault();
+        if (!this.model.playing)
+            this.view.renderWinLine();
+        else
+            this.moveAI();
+    };
 
     this.move = function(x, y) {
-        if (!AppController.model.gameinprocess)
+        if (!AppController.model.playing)
             return;
         AppController.nm = AppController.view.setStyleCursor(x, y);
         AppController.model.setNM(AppController.nm);
     };
 
-    this.click = function(x, y) {
-        if (!AppController.model.gameinprocess)
+    this.click = function() {
+        if (!AppController.model.playing)
             return;
-        var nm = AppController.model.moveUser();
-        if (nm !== false) {
-            AppController.view.renderMove(nm);
-            AppController.view.setStyleCursor(x, y);
-            AppController.moveAI();
-            if (!AppController.model.gameinprocess)
-                AppController.view.renderWinLine();
-            //if (AppController.gameinprocess)
-            //    AppController.GameMoveAI();
-        }
-        if (!AppController.model.gameinprocess)
-            AppController.view.renderWinLine();
+        AppController.moveUser();
     };
 
     this.init();

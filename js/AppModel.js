@@ -2,100 +2,172 @@
 'use strict';
 
 var AppModel = function() {
-    this.mouse;
-    this.X, this.M, this.Y, this.N;
+    this.m;
+    this.n;
     this.size = 15;
     this.who;
     this.matrix;
-    this.freecells;
+    this.freeCells;
     this.hashStep;
-    this.pattwin = [0, /(1){5}/, /(2){5}/];
-    this.directions = {1: {n: -1, m: -1}, 2: {n: -1, m: 0}, 3: {n: -1, m: 1}, 4: {n: 0, m: -1}, 5: {n: 0, m: 1}, 6: {n: 1, m: -1}, 7: {n: 1, m: 0}, 8: {n: 1, m: 1}};
-    this.gameinprocess;
+    this.playing;
     this.winLine;
+    this.prePattern = [
+        {s: 'xxxxx', w: 10000},
+        {s: '0xxxx0', w: 4000},
+        {s: '0xxxx', w: 1500},
+        {s: 'xxxx0', w: 1500},
+        {s: '0x0xxx', w: 1400},
+        {s: '0xx0xx', w: 1400},
+        {s: '0xxx0x', w: 1400},
+        {s: 'xxx0x0', w: 1400},
+        {s: 'xx0xx0', w: 1400},
+        {s: 'x0xxx0', w: 1400},
+        {s: '0xxx0', w: 1000},
+        {s: '0xxx', w: 900},
+        {s: 'xxx0', w: 900},
+        {s: '0xx0x', w: 800},
+        {s: '0x0xx', w: 800},
+        {s: 'xx0x0', w: 800},
+        {s: 'x0xx0', w: 800},
+        {s: '0xx0', w: 200}
+    ];
+    this.pattern = [[], [], []];
+    this.patternWin = [0, /(1){5}/, /(2){5}/, /[01]*7[01]*/, /[02]*7[02]*/];
+    this.directions = [];
 
     this.init = function() {
-    };
+        var s;
+        var a;
+        var l;
+        var target = 'x';
+        var pos;
+        for (var i in this.prePattern)
+        {
+            s = this.prePattern[i].s;
+            pos = -1;
+            a = [];
+            while ((pos = s.indexOf(target, pos + 1)) !== -1) {
+                a[a.length] = s.substr(0, pos) + '7' + s.substr(pos + 1);
+            }
+            s = a.join('|');
 
+            l = this.pattern[0].length;
+            this.pattern[0][l] = this.prePattern[i].w;
+            this.pattern[1][l] = new RegExp(s.replace(/x/g, '1'));
+            this.pattern[2][l] = new RegExp(s.replace(/x/g, '2'));
+
+        }
+        for (var n = -2; n <= 2; n++)
+        {
+            for (var m = -2; m <= 2; m++)
+            {
+                if (n === 0 && m === 0)
+                    continue;
+                if (Math.abs(n) <= 1 && Math.abs(m) <= 1)
+                    this.directions.push({n: n, m: m, w: 3});
+                else if (Math.abs(n) === Math.abs(m) || n * m === 0)
+                    this.directions.push({n: n, m: m, w: 2});
+                else
+                    this.directions.push({n: n, m: m, w: 1});
+            }
+        }
+    };
+    
     this.setStartData = function() {
         this.who = true;
         this.matrix = [];
-        this.winLine = [0,10,20,30,1];
-        this.hashStep = {7: {7: {attack: 1, sum: 0, defence: 0}}};
-        this.freecells = this.size * this.size;
-        for (var i = 0; i < this.size; i++) {
-            this.matrix[i] = [];
-            for (var j = 0; j < this.size; j++) {
-                this.matrix[i][j] = 0;
+        this.winLine = [];
+        this.hashStep = {7: {7: {sum: 0, attack: 1, defence: 0, attackPattern: 0, defencePattern: 0}}};
+        this.freeCells = this.size * this.size;
+        for (var n = 0; n < this.size; n++) {
+            this.matrix[n] = [];
+            for (var m = 0; m < this.size; m++) {
+                this.matrix[n][m] = 0;
             }
         }
-        this.gameinprocess = true;
-        
+        this.playing = true;
+        console.log('New Game');
     };
-
+    
     this.setNM = function(a) {
-        this.N = a.n;
-        this.M = a.m;
+        this.n = a.n;
+        this.m = a.m;
     };
-
+    
+    this.emptyCell = function() {
+        return this.matrix[this.n][this.m] === 0;
+    };
+    
     this.moveUser = function() {
-        this.gameinprocess = false;
-        var n = this.N;
-        var m = this.M;
-        if (this.matrix[n][m] !== 0)
-            return false;
-
-        if (this.hashStep[n] && this.hashStep[n][m])
-            delete this.hashStep[n][m];
-
-        for (var key in this.directions) {
-            var i = n + this.directions[key].n;
-            var j = m + this.directions[key].m;
-            if (i < 0 || j < 0 || i >= this.size || j >= this.size)
-                continue;
-            if (this.matrix[i][j] !== 0)
-                continue;
-            if (!(i in this.hashStep))
-                this.hashStep[i] = {};
-            if (!(j in this.hashStep[i]))
-                this.hashStep[i][j] = {attack: 0, sum: 0, defence: 0};
-            this.hashStep[i][j].defence++;
-        }
-        return this.move(n, m);
+        this.playing = false;
+        return this.move(this.n, this.m, false);
     };
-
-
+    
     this.moveAI = function() {
-        this.gameinprocess = false;
-        var keyN, keyM;
+        this.playing = false;
+        var n, m;
         var max = 0;
-        for (keyN in this.hashStep)
-        {
-            for (keyM in this.hashStep[keyN])
-            {
-                this.hashStep[keyN][keyM].sum = this.hashStep[keyN][keyM].attack + this.hashStep[keyN][keyM].defence;
-                if (this.hashStep[keyN][keyM].sum > max)
-                    max = this.hashStep[keyN][keyM].sum;
-            }
-        }
+        this.calculateHashMovePattern();
+        for (n in this.hashStep)
+            for (m in this.hashStep[n])
+                if (this.hashStep[n][m].sum > max)
+                    max = this.hashStep[n][m].sum;
         var goodmoves = [];
-        for (keyN in this.hashStep)
+        for (n in this.hashStep)
         {
-            for (keyM in this.hashStep[keyN])
+            for (m in this.hashStep[n])
             {
-                if (this.hashStep[keyN][keyM].sum === max) {
-                    goodmoves[goodmoves.length] = {n: parseInt(keyN), m: parseInt(keyM)};
+                if (this.hashStep[n][m].sum === max) {
+                    goodmoves[goodmoves.length] = {n: parseInt(n), m: parseInt(m)};
                 }
             }
         }
         var movenow = goodmoves[getRandomInt(0, goodmoves.length - 1)];
-        //console.log(JSON.stringify(this.hashStep));
-        this.N = movenow.n;
-        this.M = movenow.m;
-        delete this.hashStep[this.N][this.M];
+        this.n = movenow.n;
+        this.m = movenow.m;
+        return this.move(this.n, this.m, true);
+    };
+    
+    this.move = function(n, m, aiStep) {
+        if (this.hashStep[n] && this.hashStep[n][m])
+            delete this.hashStep[n][m];
+        this.matrix[n][m] = 2 - this.who;
+        this.who = !this.who;
+        this.freeCells--;
+        var t = this.matrix[this.n][this.m];
+        var s = ['', '', '', ''];
+        var nT = Math.min(this.n, 4);
+        var nR = Math.min(this.size - this.m - 1, 4);
+        var nB = Math.min(this.size - this.n - 1, 4);
+        var nL = Math.min(this.m, 4);
+        for (var j = this.n - nT; j <= this.n + nB; j++)
+            s[0] += this.matrix[j][this.m];
+        for (var i = this.m - nL; i <= this.m + nR; i++)
+            s[1] += this.matrix[this.n][i];
+        for (var i = -Math.min(nT, nL); i <= Math.min(nR, nB); i++)
+            s[2] += this.matrix[this.n + i][this.m + i];
+        for (var i = -Math.min(nB, nL); i <= Math.min(nR, nT); i++)
+            s[3] += this.matrix[this.n - i][this.m + i];
+        var k;
+        if ((k = s[0].search(this.patternWin[t])) >= 0)
+            this.winLine = [this.m, this.n - nT + k, this.m, this.n - nT + k + 4];
+        else if ((k = s[1].search(this.patternWin[t])) >= 0)
+            this.winLine = [this.m - nL + k, this.n, this.m - nL + k + 4, this.n];
+        else if ((k = s[2].search(this.patternWin[t])) >= 0)
+            this.winLine = [this.m - Math.min(nT, nL) + k, this.n - Math.min(nT, nL) + k, this.m - Math.min(nT, nL) + k + 4, this.n - Math.min(nT, nL) + k + 4];
+        else if ((k = s[3].search(this.patternWin[t])) >= 0)
+            this.winLine = [this.m - Math.min(nB, nL) + k, this.n + Math.min(nB, nL) - k, this.m - Math.min(nB, nL) + k + 4, this.n + Math.min(nB, nL) - k - 4, -1];
+        this.playing = (this.freeCells !== 0 && this.winLine.length === 0);
+        if (this.playing)
+            this.calculateHashMove(aiStep);
+        console.log(JSON.stringify({n:n, m:m}));
+        return {n: n, m: m};
+    };
+    
+    this.calculateHashMove = function(attack) {
         for (var key in this.directions) {
-            var n = this.N + this.directions[key].n;
-            var m = this.M + this.directions[key].m;
+            var n = this.n + this.directions[key].n;
+            var m = this.m + this.directions[key].m;
             if (n < 0 || m < 0 || n >= this.size || m >= this.size)
                 continue;
             if (this.matrix[n][m] !== 0)
@@ -103,45 +175,72 @@ var AppModel = function() {
             if (!(n in this.hashStep))
                 this.hashStep[n] = {};
             if (!(m in this.hashStep[n]))
-                this.hashStep[n][m] = {attack: 0, sum: 0, defence: 0};
-            this.hashStep[n][m].attack++;
+                this.hashStep[n][m] = {sum: 0, attack: 0, defence: 0, attackPattern: 0, defencePattern: 0};
+            if (attack)
+                this.hashStep[n][m].attack += this.directions[key].w;
+            else
+                this.hashStep[n][m].defence += this.directions[key].w;
         }
-        //hashStep[N][M] = 1;
-        return this.move(this.N, this.M);
     };
+    
+    this.calculateHashMovePattern = function() {
+        var s;
+        var k = 0;
+        var attack = 2 - this.who;
+        var defence = 2 - !this.who;
+        var res;
+        for (n in this.hashStep)
+            for (m in this.hashStep[n])
+            {
+                this.hashStep[n][m].sum = this.hashStep[n][m].attack + this.hashStep[n][m].defence;
+                this.hashStep[n][m].attackPattern = 0;
+                this.hashStep[n][m].defencePattern = 0;
+                n = parseInt(n);
+                m = parseInt(m);
+                for (var q = 1; q <= 2; q++)
+                    for (var j = 1; j <= 4; j++)
+                    {
+                        s = '';
+                        for (var i = -4; i <= 4; i++)
+                            switch (j) {
+                                case 1:
+                                    if (n + i >= 0 && n + i < this.size)
+                                        s += (i === 0) ? '7' : this.matrix[n + i][m];
+                                    break;
+                                case 2:
+                                    if (m + i >= 0 && m + i < this.size)
+                                        s += (i === 0) ? '7' : this.matrix[n][m + i];
+                                    break;
+                                case 3:
+                                    if (n + i >= 0 && n + i < this.size)
+                                        if (m + i >= 0 && m + i < this.size)
+                                            s += (i === 0) ? '7' : this.matrix[n + i][m + i];
+                                    break;
+                                case 4:
+                                    if (n - i >= 0 && n - i < this.size)
+                                        if (m + i >= 0 && m + i < this.size)
+                                            s += (i === 0) ? '7' : this.matrix[n - i][m + i];
+                                    break;
+                            }
+                        res = (q === 1) ? this.patternWin[2 + attack].exec(s) : this.patternWin[2 + defence].exec(s);
+                        if (res === null)
+                            continue;
+                        if (res[0].length < 5)
+                            continue;
+                        if (q === 1)
+                            for (var i in this.pattern[attack]) {
+                                if (this.pattern[attack][i].test(s))
+                                    this.hashStep[n][m].attackPattern += this.pattern[0][i];
+                            }
+                        else
+                            for (var i in this.pattern[defence])
+                                if (this.pattern[defence][i].test(s))
+                                    this.hashStep[n][m].defencePattern += this.pattern[0][i];
+                    }
 
-    this.move = function(n, m) {
-        this.matrix[n][m] = 2 - this.who;
-        this.who = !this.who;
-        this.freecells--;
-
-        var t = this.matrix[this.N][this.M];
-        var s = ['', '', '', ''];
-        var nT = Math.min(this.N, 4);
-        var nR = Math.min(this.size - this.M - 1, 4);
-        var nB = Math.min(this.size - this.N - 1, 4);
-        var nL = Math.min(this.M, 4);
-        for (var j = this.N - nT; j <= this.N + nB; j++)
-            s[0] += this.matrix[j][this.M];
-        for (var i = this.M - nL; i <= this.M + nR; i++)
-            s[1] += this.matrix[this.N][i];
-        for (var i = -Math.min(nT, nL); i <= Math.min(nR, nB); i++)
-            s[2] += this.matrix[this.N + i][this.M + i];
-        for (var i = -Math.min(nB, nL); i <= Math.min(nR, nT); i++)
-            s[3] += this.matrix[this.N - i][this.M + i];
-        var k;
-        if ((k = s[0].search(this.pattwin[t])) >= 0)
-            this.winLine = [this.M, this.N - nT + k, this.M, this.N - nT + k + 4];
-        else if ((k = s[1].search(this.pattwin[t])) >= 0)
-            this.winLine = [this.M - nL + k, this.N, this.M - nL + k + 4, this.N];
-        else if ((k = s[2].search(this.pattwin[t])) >= 0)
-            this.winLine = [this.M - Math.min(nT, nL) + k, this.N - Math.min(nT, nL) + k, this.M - Math.min(nT, nL) + k + 4, this.N - Math.min(nT, nL) + k + 4];
-        else if ((k = s[3].search(this.pattwin[t])) >= 0)
-            this.winLine = [this.M - Math.min(nB, nL) + k, this.N + Math.min(nB, nL) - k, this.M - Math.min(nB, nL) + k + 4, this.N + Math.min(nB, nL) - k - 4, -1];
-        else if (this.freecells !== 0)
-            this.gameinprocess = true;
-        return {n: n, m: m};
+                this.hashStep[n][m].sum += this.hashStep[n][m].attackPattern + this.hashStep[n][m].defencePattern;
+                k++;
+            }
     };
-
     this.init();
 };

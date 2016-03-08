@@ -6,10 +6,34 @@ var AppView = function(model) {
     this.model = model;
     this.canvas;
     this.ctx;
+    this.inputNewGameX;
+    this.inputNewGameO;
     this.cellsize = 40, this.halfcellsize = 20, this.radius = 12, this.cross = 10, this.crosswin = 15;
     this.color = {canvas: '#ECEABE', border: 'silver', winline: '#6A5D4D'};
     this.init = function() {
-        AppView.canvas = document.getElementById('board');
+        var body = document.getElementsByTagName('body')[0];
+        var div = document.createElement('div');
+        div.className = 'scoreboard';
+        body.appendChild(div);
+        var element = document.createElement('input');
+        element.type = 'button';
+        element.value = 'New game for X';
+        div.appendChild(element);
+        AppView.inputNewGameX = element;
+        element = document.createElement('span');
+        element.innerHTML = ' or ';
+        div.appendChild(element);
+        element = document.createElement('input');
+        element.type = 'button';
+        element.value = 'New game for O';
+        div.appendChild(element);
+        AppView.inputNewGameO = element;
+        div = document.createElement('div');
+        div.className = 'gameboard';
+        body.appendChild(div);
+        var canvas = document.createElement('canvas');
+        div.appendChild(canvas);
+        AppView.canvas = canvas;
         AppView.ctx = AppView.canvas.getContext('2d');
         AppView.canvas.height = 601;
         AppView.canvas.width = 601;
@@ -33,45 +57,37 @@ var AppView = function(model) {
     };
 
     this.renderMove = function(nm) {
-        n = nm.n || this.model.N;
-        m = nm.m || this.model.M;
+        n = nm.n || this.model.n;
+        m = nm.m || this.model.m;
         if (this.model.matrix[n][m] === 1)
             this.renderX(n, m);
         else
             this.renderO(n, m);
-        this.renderMoveHash();
+        //this.renderMoveHash();
+    };
+
+    this.renderMoveHashLable = function(n, m, text, dx, dy) {
+        var x = m * this.cellsize + dx * this.halfcellsize / 4;
+        var y = n * this.cellsize + dy * this.halfcellsize / 4;
+        var ctx = this.ctx;
+        var color = this.color;
+        ctx.fillStyle = color.canvas;
+        ctx.fillRect(x, y, 10, 10);
+        ctx.fillStyle = color.border;
+        ctx.textBaseline = 'top';
+        ctx.fillText(text, x, y);
     };
 
     this.renderMoveHash = function() {
         for (var n in this.model.hashStep)
-        {
             for (var m in this.model.hashStep[n])
             {
-                var x = m * this.cellsize + 3 * this.halfcellsize / 4;
-                var y = n * this.cellsize + this.halfcellsize / 4;
-                var ctx = this.ctx;
-                var color = this.color;
-                ctx.fillStyle = color.canvas;
-                ctx.fillRect(x, y, 10, 10);
-                ctx.fillStyle = color.border;
-                ctx.textBaseline = 'top';
-                ctx.fillText((this.model.hashStep[n][m].attack + this.model.hashStep[n][m].defence), x, y);
-                var x = m * this.cellsize + this.halfcellsize / 4;
-                var y = n * this.cellsize + 3 * this.halfcellsize / 4;
-                ctx.fillStyle = color.canvas;
-                ctx.fillRect(x, y, 10, 10);
-                ctx.fillStyle = color.border;
-                ctx.textBaseline = 'top';
-                ctx.fillText(this.model.hashStep[n][m].attack, x, y);
-                var x = m * this.cellsize + 6 * this.halfcellsize / 4;
-                var y = n * this.cellsize + 3 * this.halfcellsize / 4;
-                ctx.fillStyle = color.canvas;
-                ctx.fillRect(x, y, 10, 10);
-                ctx.fillStyle = color.border;
-                ctx.textBaseline = 'top';
-                ctx.fillText(this.model.hashStep[n][m].defence, x, y);
+                this.renderMoveHashLable(n, m, this.model.hashStep[n][m].sum, 1, 1);
+                this.renderMoveHashLable(n, m, this.model.hashStep[n][m].attack, 1, 3);
+                this.renderMoveHashLable(n, m, this.model.hashStep[n][m].defence, 6, 3);
+                this.renderMoveHashLable(n, m, this.model.hashStep[n][m].attackPattern, 1, 6);
+                this.renderMoveHashLable(n, m, this.model.hashStep[n][m].defencePattern, 6, 6);
             }
-        }
     };
 
     this.renderWinLine = function()
@@ -135,6 +151,10 @@ var AppView = function(model) {
         else
             this.canvas.style.cursor = 'default';
         return {n: n, m: m};
+    };
+
+    this.setStyleCursorDefault = function() {
+        this.canvas.style.cursor = 'default';
     };
 
     this.init();
