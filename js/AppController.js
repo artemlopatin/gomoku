@@ -19,7 +19,7 @@ var AppController = function(model, view) {
 
     this.newGame = function(a) {
         this.view.renderBoard();
-        this.model.setStartData();
+        this.model.setStartData(a);
         if (a === 2)
             this.moveAI();
     };

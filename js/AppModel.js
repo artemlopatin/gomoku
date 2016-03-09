@@ -34,6 +34,7 @@ var AppModel = function() {
     this.pattern = [[], [], []];
     this.patternWin = [0, /(1){5}/, /(2){5}/, /[01]*7[01]*/, /[02]*7[02]*/];
     this.directions = [];
+    this.step = 0;
 
     this.init = function() {
         var s;
@@ -72,8 +73,8 @@ var AppModel = function() {
             }
         }
     };
-    
-    this.setStartData = function() {
+
+    this.setStartData = function(a) {
         this.who = true;
         this.matrix = [];
         this.winLine = [];
@@ -85,24 +86,28 @@ var AppModel = function() {
                 this.matrix[n][m] = 0;
             }
         }
+        this.step = 0;
         this.playing = true;
-        console.log('New Game');
+        if (a === 2)
+            console.log('New Game! X - AI, O - user');
+        else
+            console.log('New Game! X - user, O - AI');
     };
-    
+
     this.setNM = function(a) {
         this.n = a.n;
         this.m = a.m;
     };
-    
+
     this.emptyCell = function() {
         return this.matrix[this.n][this.m] === 0;
     };
-    
+
     this.moveUser = function() {
         this.playing = false;
         return this.move(this.n, this.m, false);
     };
-    
+
     this.moveAI = function() {
         this.playing = false;
         var n, m;
@@ -127,7 +132,7 @@ var AppModel = function() {
         this.m = movenow.m;
         return this.move(this.n, this.m, true);
     };
-    
+
     this.move = function(n, m, aiStep) {
         if (this.hashStep[n] && this.hashStep[n][m])
             delete this.hashStep[n][m];
@@ -160,10 +165,10 @@ var AppModel = function() {
         this.playing = (this.freeCells !== 0 && this.winLine.length === 0);
         if (this.playing)
             this.calculateHashMove(aiStep);
-        console.log(JSON.stringify({n:n, m:m}));
+        console.log(++this.step + ': ' + n + ', ' + m);
         return {n: n, m: m};
     };
-    
+
     this.calculateHashMove = function(attack) {
         for (var key in this.directions) {
             var n = this.n + this.directions[key].n;
@@ -182,7 +187,7 @@ var AppModel = function() {
                 this.hashStep[n][m].defence += this.directions[key].w;
         }
     };
-    
+
     this.calculateHashMovePattern = function() {
         var s;
         var k = 0;
@@ -242,5 +247,6 @@ var AppModel = function() {
                 k++;
             }
     };
+
     this.init();
 };
