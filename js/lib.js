@@ -54,3 +54,18 @@ function createElement(name, attributes) {
     }
     return el;
 }
+
+function getMiddleColor(a, b, c) {
+    var percent = a || 0;
+    var startColor = b || '#fafafa';
+    var finishColor = c || '#FF0000';
+    var aRGBStart = startColor.replace('#', '').match(/.{2}/g);
+    var aRGBFinish = finishColor.replace('#', '').match(/.{2}/g);
+    var finishPercent = percent;
+    var startPercent = 1 - finishPercent;
+    var R, G, B;
+    var R = Math.floor(('0x' + aRGBStart[0]) * startPercent + ('0x' + aRGBFinish[0]) * finishPercent);
+    var G = Math.floor(('0x' + aRGBStart[1]) * startPercent + ('0x' + aRGBFinish[1]) * finishPercent);
+    var B = Math.floor(('0x' + aRGBStart[2]) * startPercent + ('0x' + aRGBFinish[2]) * finishPercent);
+    return 'rgb(' + R + ',' + G + ',' + B + ')';
+}
