@@ -15,6 +15,7 @@ var GamePattern = function() {
     this.pattern = [[], [], []]; // Массив шаблонов для Х и 0, генерируется из предыдущих шаблонов. Вес, для X, для O
     this.winnerLine = ['', /(1){5,}/, /(2){5,}/]; // Выигрышный шаблон, 1 - для Х, 2 - для О
     this.possibleLine = ['', /[01]*7[01]*/, /[02]*7[02]*/]; // Шаблон определния возможности поставить 5 в ряд (если длина будет линии >=5)
+    this.emptyPatern = '000070000'; //Шаблон "пустой строки" бессмысленной для анализа
 
     this.init = function() {
         var s, a, l;
@@ -37,7 +38,7 @@ var GamePattern = function() {
     };
 
     this.getWinnerLine = function(xo, s) {
-        var start = s.search();
+        var start = s.search(this.winnerLine[xo]);
         if (start === -1)
             return false;
         return [start, this.winnerLine[xo].exec(s)[0].length];
