@@ -6,25 +6,31 @@ var GameLocation = function() {
     this.n; // Номер ячейки по вертикали (номер строки)
     this.size = 15; // Размер поля (15х15 ячеек)
     this.matrix; // Матрица игрового поля 15х15. 0 - свободная клетка, 1 - крестик, 2 - нолик
-    this.hashStep; // Хеш-массив потенциальных ходов
+    this.potentialMove; // Хеш-массив потенциальных ходов
+    this.oldN; // Номер яейки по горизонтали (номер столбца)
+    this.oldM; // Номер ячейки по вертикали (номер строки)
+    this.oldPotentialMove;
+    this.goodMoves;
     this.pattern;
 
-    this.init = function() {
-        this.pattern = new GamePattern();
+    this.init = function(pattern) {
+        this.pattern = pattern;
     };
 
     this.start = function() { // Начальные установки для каждой новой игры
         this.matrix = [];
-        this.hashStep = {};
+        this.potentialMove = {};
         for (var n = 0; n < this.size; n++) {
             this.matrix[n] = [];
             for (var m = 0; m < this.size; m++)
                 this.matrix[n][m] = 0;
         }
+        this.oldN = -1;
+        this.oldM = -1;
     };
 
-    this.setFirstHashStep = function() {
-        this.hashStep = {7: {7: {sum: 0, attack: 0, defence: 0}}};
+    this.setFirstPotentialMove = function() {
+        this.potentialMove = {7: {7: {sum: 0, attack: 0, defence: 0}}};
     };
 
     this.setNM = function(a) { // Установка координат текущего хода (в номерах ячеек)
@@ -39,7 +45,7 @@ var GameLocation = function() {
     };
 
     this.getGoodMoves = function() {
-        var hs = this.hashStep;
+        var hs = this.potentialMove;
         var max = 0;
         var n, m;
         var goodMoves = [];
@@ -52,6 +58,7 @@ var GameLocation = function() {
             for (m in hs[n])
                 if (hs[n][m].sum >= max)
                     goodMoves[goodMoves.length] = [parseInt(n), parseInt(m)];
+        this.goodMoves = goodMoves;
         return goodMoves;
     };
 
@@ -64,8 +71,8 @@ var GameLocation = function() {
         this.matrix[n][m] = xo;
     };
 
-    this.updateHashSteps = function(n, m) {
-        var hs = this.hashStep;
+    this.updatePotentialMove = function(n, m) {
+        var hs = this.potentialMove;
         if (hs[n] && hs[n][m])
             delete hs[n][m]; // Если поле хода было в массиве потенциалльных ходов, то поле удаляется из него
         var nd, md;
@@ -82,7 +89,7 @@ var GameLocation = function() {
                 if (!(md in hs[nd]))
                     hs[nd][md] = {sum: 0, attack: 0, defence: 0};
             }
-        this.hashStep = hs;
+        this.potentialMove = hs;
     };
 
     this.getOneSymbol = function(i, n, m, test) {
@@ -130,8 +137,8 @@ var GameLocation = function() {
         return lines;
     };
 
-    this.calculateHashMovePattern = function(xAI) { // Расчет весов потенциальных ходов по заданным шаблонам
-        var hs = this.hashStep;
+    this.calculatePotentialMovePattern = function(xAI) { // Расчет весов потенциальных ходов по заданным шаблонам
+        var hs = this.potentialMove;
         var s;
         var weight1;
         var weight2;
@@ -159,10 +166,8 @@ var GameLocation = function() {
                 }
                 //if (hs[n][m].defence < 20)
                 //    hs[n][m].defence = 0;
-                hs[n][m].sum = 2 * hs[n][m].attack + hs[n][m].defence; // Атака предпочтительнее дефа
+                hs[n][m].sum = hs[n][m].attack + hs[n][m].defence; // Атака предпочтительнее дефа
             }
-        this.hashStep = hs;
+        this.potentialMove = hs;
     };
-
-    this.init();
 };
