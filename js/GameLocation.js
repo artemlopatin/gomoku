@@ -2,12 +2,12 @@
 'use strict';
 
 var GameLocation = function() {
-    this.m; // Номер яейки по горизонтали (номер столбца)
+    this.m; // Номер ячейки по горизонтали (номер столбца)
     this.n; // Номер ячейки по вертикали (номер строки)
     this.size = 15; // Размер поля (15х15 ячеек)
     this.matrix; // Матрица игрового поля 15х15. 0 - свободная клетка, 1 - крестик, 2 - нолик
     this.potentialMove; // Хеш-массив потенциальных ходов
-    this.oldN; // Номер яейки по горизонтали (номер столбца)
+    this.oldN; // Номер ячейки по горизонтали (номер столбца)
     this.oldM; // Номер ячейки по вертикали (номер строки)
     this.oldPotentialMove;
     this.goodMoves;
@@ -74,7 +74,7 @@ var GameLocation = function() {
     this.updatePotentialMove = function(n, m) {
         var hs = this.potentialMove;
         if (hs[n] && hs[n][m])
-            delete hs[n][m]; // Если поле хода было в массиве потенциалльных ходов, то поле удаляется из него
+            delete hs[n][m]; // Если поле хода было в массиве потенциальных ходов, то поле удаляется из него
         var nd, md;
         for (var i = -2; i <= 2; i++)
             for (var j = -2; j <= 2; j++) {
@@ -110,7 +110,7 @@ var GameLocation = function() {
                 s += this.getOneSymbol(i, n - i, m + i, test);
     };
 
-    this.getAllLines = function(n, m, a) { // Получение 4 линий:  | — \ / 
+    this.getAllLines = function(n, m, a) { // Получение 4 линий:  | — \ /
         var test = a || false;
         var lines = [];
         for (var j = 1; j <= 4; j++)
@@ -144,7 +144,7 @@ var GameLocation = function() {
         var weight2;
         var lines;
         for (n in hs)
-            for (m in hs[n]) { // Перебор всех потенциальных ходов 
+            for (m in hs[n]) { // Перебор всех потенциальных ходов
                 weight1 = 0;
                 weight2 = 0;
                 lines = this.getLines(parseInt(n), parseInt(m), true);
